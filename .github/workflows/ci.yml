@@ -15,4 +15,25 @@ jobs:
           java-version: '17'
           cache: maven
       - name: Test against PostgreSQL and build
-        run: mvn -B --no-transfer-progress verify
+        run: ./mvnw -B --no-transfer-progress verify
+      - name: Start application with PostgreSQL 17
+        run: docker compose up -d --build
+      - name: Wait for HTTP readiness
+        run: |
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://localhost:8080/actuator/health; then
+              curl --fail --silent --output /dev/null http://localhost:8080/swagger-ui/index.html
+              exit 0
+            fi
+            sleep 2
+          done
+          exit 1
+      - name: Run demo through real HTTP
+        shell: pwsh
+        run: ./scripts/demo.ps1
+      - name: Container logs on failure
+        if: failure()
+        run: docker compose logs
+      - name: Stop containers
+        if: always()
+        run: docker compose down
