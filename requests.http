@@ -1,0 +1,54 @@
+### Run against a fresh local app; IDs are captured from responses.
+@baseUrl = http://localhost:8080/api/v1
+
+### Create an engineer (change email if running again)
+POST {{baseUrl}}/engineers
+Content-Type: application/json
+
+{"name":"Dana","email":"dana@example.com"}
+
+> {% client.global.set("engineerId", response.body.id); %}
+
+### Create a ticket
+POST {{baseUrl}}/tickets
+Content-Type: application/json
+
+{"title":"VPN connection fails","description":"Certificate expired after an update","requesterEmail":"employee@example.com"}
+
+> {% client.global.set("ticketId", response.body.id); %}
+
+### Assign
+PUT {{baseUrl}}/tickets/{{ticketId}}/assignee
+Content-Type: application/json
+
+{"engineerId":{{engineerId}}}
+
+### Start
+PATCH {{baseUrl}}/tickets/{{ticketId}}/status
+Content-Type: application/json
+
+{"status":"IN_PROGRESS"}
+
+### Comment
+POST {{baseUrl}}/tickets/{{ticketId}}/comments
+Content-Type: application/json
+
+{"author":"Dana","body":"Renewed certificate and verified VPN connection"}
+
+### Resolve
+PATCH {{baseUrl}}/tickets/{{ticketId}}/status
+Content-Type: application/json
+
+{"status":"RESOLVED"}
+
+### Comments
+GET {{baseUrl}}/tickets/{{ticketId}}/comments
+
+### Filter
+GET {{baseUrl}}/tickets?status=RESOLVED&assigneeId={{engineerId}}&page=0&size=10
+
+### Reopen
+PATCH {{baseUrl}}/tickets/{{ticketId}}/status
+Content-Type: application/json
+
+{"status":"OPEN"}
